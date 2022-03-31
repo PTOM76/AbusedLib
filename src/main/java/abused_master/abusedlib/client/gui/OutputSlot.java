@@ -1,9 +1,9 @@
 package abused_master.abusedlib.client.gui;
 
-import net.minecraft.container.Slot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.slot.Slot;
 
 public class OutputSlot extends Slot {
 
@@ -25,9 +25,8 @@ public class OutputSlot extends Slot {
         return super.takeStack(int_1);
     }
 
-    public ItemStack onTakeItem(PlayerEntity playerEntity_1, ItemStack itemStack_1) {
+    public void onTakeItem(PlayerEntity playerEntity_1, ItemStack itemStack_1) {
         this.onCrafted(itemStack_1);
         super.onTakeItem(playerEntity_1, itemStack_1);
-        return itemStack_1;
     }
 }

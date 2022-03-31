@@ -1,7 +1,7 @@
 package abused_master.abusedlib.fluid;
 
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 
 public class FluidContainer implements IFluidContainer {
 
@@ -95,8 +95,8 @@ public class FluidContainer implements IFluidContainer {
     }
 
     @Override
-    public FluidContainer readFromNBT(CompoundTag nbt) {
-        if(!nbt.containsKey("empty")) {
+    public FluidContainer readFromNBT(NbtCompound nbt) {
+        if(!nbt.contains("empty")) {
             this.fluidStack = FluidStack.fluidFromTag(nbt);
         }else {
             this.fluidStack = null;
@@ -106,7 +106,7 @@ public class FluidContainer implements IFluidContainer {
     }
 
     @Override
-    public CompoundTag writeToNBT(CompoundTag nbt) {
+    public NbtCompound writeToNBT(NbtCompound nbt) {
         if (fluidStack != null) {
             fluidStack.toTag(nbt);
         } else {

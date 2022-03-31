@@ -4,13 +4,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.fabricmc.fabric.api.tag.TagRegistry;
+//import net.fabricmc.fabric.api.tag.TagRegistry;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.Tag;
+import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import org.apache.commons.lang3.ArrayUtils;
@@ -147,12 +148,12 @@ public class RecipeGenerator {
                         ingredients.put(character, Ingredient.ofItems((ItemConvertible) next));
                     else if (next instanceof ItemStack)
                         ingredients.put(character, Ingredient.ofStacks((ItemStack) next));
-                    else if (next instanceof Tag && TagRegistry.item(((Tag) next).getId()) != null)
-                        ingredients.put(character, Ingredient.fromTag(TagRegistry.item(((Tag) next).getId())));
+                    else if (next instanceof Tag && TagKey.of(Registry.ITEM_KEY, ((TagKey) next).id()) != null)
+                        ingredients.put(character, Ingredient.fromTag(TagKey.of(Registry.ITEM_KEY, ((TagKey) next).id())));
                     else if (next instanceof String)
-                        ingredients.put(character, Ingredient.fromTag(ItemTags.getContainer().get(new Identifier((String) next))));
+                        ingredients.put(character, Ingredient.fromTag(TagKey.of(Registry.ITEM_KEY, new Identifier((String) next))));
                     else if (next instanceof Identifier)
-                        ingredients.put(character, Ingredient.fromTag(ItemTags.getContainer().get((Identifier) next)));
+                        ingredients.put(character, Ingredient.fromTag(TagKey.of(Registry.ITEM_KEY, (Identifier) next)));
                     else
                         throw new IllegalArgumentException("Character defined with no following valid ingredient: " + next);
 
@@ -180,12 +181,12 @@ public class RecipeGenerator {
                     ingredients.add(Ingredient.ofItems((ItemConvertible) object));
                 else if (object instanceof ItemStack)
                     ingredients.add(Ingredient.ofItems(((ItemStack) object).getItem()));
-                else if (object instanceof Tag && ItemTags.getContainer().get(((Tag) object).getId()) != null)
-                    ingredients.add(Ingredient.fromTag((Tag<Item>) object));
+                else if (object instanceof Tag && TagKey.of(Registry.ITEM_KEY, ((TagKey) object).id()) != null)
+                    ingredients.add(Ingredient.fromTag((TagKey<Item>) object));
                 else if (object instanceof String)
-                    ingredients.add(Ingredient.fromTag(ItemTags.getContainer().get(new Identifier((String) object))));
+                    ingredients.add(Ingredient.fromTag(TagKey.of(Registry.ITEM_KEY, new Identifier((String) object))));
                 else if (object instanceof Identifier)
-                    ingredients.add(Ingredient.fromTag(ItemTags.getContainer().get((Identifier) object)));
+                    ingredients.add(Ingredient.fromTag(TagKey.of(Registry.ITEM_KEY, (Identifier) object)));
             }
 
             return ingredients;

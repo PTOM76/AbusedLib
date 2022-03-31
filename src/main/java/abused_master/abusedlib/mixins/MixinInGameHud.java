@@ -3,6 +3,7 @@ package abused_master.abusedlib.mixins;
 import abused_master.abusedlib.utils.events.RenderHudCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,7 +25,7 @@ public class MixinInGameHud {
     private int scaledHeight;
 
     @Inject(method = "render", at = @At("RETURN"))
-    public void draw(float partialTicks, CallbackInfo ci) {
-        RenderHudCallback.EVENT.invoker().renderHud(client, scaledWidth, scaledHeight, client.window.getScaleFactor(), partialTicks);
+    public void draw(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
+        RenderHudCallback.EVENT.invoker().renderHud(client, scaledWidth, scaledHeight, client.getWindow().getScaleFactor(), tickDelta);
     }
 }

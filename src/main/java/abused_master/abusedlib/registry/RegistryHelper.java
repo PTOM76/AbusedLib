@@ -2,6 +2,11 @@ package abused_master.abusedlib.registry;
 
 import abused_master.abusedlib.blocks.BlockBase;
 import abused_master.abusedlib.items.ItemBase;
+import com.mojang.serialization.Codec;
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectionContext;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
@@ -9,13 +14,23 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.*;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.GenerationSettings;
+import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.gen.GenerationStep;
-import net.minecraft.world.gen.decorator.Decorator;
-import net.minecraft.world.gen.decorator.RangeDecoratorConfig;
-import net.minecraft.world.gen.feature.OreFeatureConfig;
+//import net.minecraft.world.gen.decorator.Decorator;
+//import net.minecraft.world.gen.decorator.RangeDecoratorConfig;
+import net.minecraft.world.gen.YOffset;
+import net.minecraft.world.gen.feature.*;
+import net.minecraft.world.gen.placementmodifier.CountPlacementModifier;
+import net.minecraft.world.gen.placementmodifier.HeightRangePlacementModifier;
+import net.minecraft.world.gen.placementmodifier.SquarePlacementModifier;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class RegistryHelper {
@@ -56,16 +71,14 @@ public class RegistryHelper {
      * EX: BlockEntityType<BlockEntityTest> BlockEntityTest = registerTile(new Identifier(MODID, NAME), BlockEntityTest.class);
      */
     public static BlockEntityType registerTile(Identifier identifier, Class<? extends BlockEntity> blockEntity, Block... blocks) {
-        return Registry.register(Registry.BLOCK_ENTITY, identifier, BlockEntityType.Builder.create((Supplier<BlockEntity>) () -> {
+        return Registry.register(Registry.BLOCK_ENTITY_TYPE, identifier, FabricBlockEntityTypeBuilder.create((FabricBlockEntityTypeBuilder.Factory<? extends BlockEntity>)(Supplier<BlockEntity>) () -> {
             try {
                 return blockEntity.newInstance();
             } catch (InstantiationException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
-
-            return null;
         }, blocks).build(null));
     }
 
@@ -73,18 +86,66 @@ public class RegistryHelper {
      * World Gen Ore Registry
      */
     public static void generateOreInStone(Block block, int veinSize, int spawnRate, int maxHeight) {
-        for (Biome biome : Registry.BIOME) {
-            biome.addFeature(GenerationStep.Feature.UNDERGROUND_ORES, Biome.configureFeature(net.minecraft.world.gen.feature.Feature.ORE, new OreFeatureConfig(OreFeatureConfig.Target.NATURAL_STONE, block.getDefaultState(), veinSize), Decorator.COUNT_RANGE, new RangeDecoratorConfig(spawnRate, 0, 0, maxHeight)));
-        }
+        generateOreInStone(new Identifier("abusedlib", Registry.ITEM.getId(block.asItem()).getPath() + "_ore"), block, veinSize, spawnRate, maxHeight);
+
+    }
+    public static void generateOreInStone(Identifier identifier, Block block, int veinSize, int spawnRate, int maxHeight) {
+        ConfiguredFeature<?, ?> CONFIGURED_FEATURE = new ConfiguredFeature(Feature.ORE,
+                new OreFeatureConfig(OreConfiguredFeatures.STONE_ORE_REPLACEABLES, block.getDefaultState(), veinSize));
+
+        PlacedFeature PLACED_FEATURE = new PlacedFeature(RegistryEntry.of(CONFIGURED_FEATURE),
+                Arrays.asList(CountPlacementModifier.of(spawnRate), SquarePlacementModifier.of(), HeightRangePlacementModifier.uniform(YOffset.getBottom(), YOffset.fixed(maxHeight))));
+
+        Registry.register(BuiltinRegistries.CONFIGURED_FEATURE,
+                identifier, CONFIGURED_FEATURE);
+        Registry.register(BuiltinRegistries.PLACED_FEATURE, identifier,
+                PLACED_FEATURE);
+
+        Predicate<BiomeSelectionContext> predicate = BiomeSelectors.all();
+        BiomeModifications.addFeature(predicate, GenerationStep.Feature.UNDERGROUND_ORES,
+                RegistryKey.of(Registry.PLACED_FEATURE_KEY, identifier));
     }
 
     public static void generateOre(Block block, OreFeatureConfig.Target target, int veinSize, int spawnRate, int maxHeight) {
-        for (Biome biome : Registry.BIOME) {
-            biome.addFeature(GenerationStep.Feature.UNDERGROUND_ORES, Biome.configureFeature(net.minecraft.world.gen.feature.Feature.ORE, new OreFeatureConfig(target, block.getDefaultState(), veinSize), Decorator.COUNT_RANGE, new RangeDecoratorConfig(spawnRate, 0, 0, maxHeight)));
-        }
+        generateOre(new Identifier("abusedlib", Registry.ITEM.getId(block.asItem()).getPath() + "_ore"), block, target, veinSize, spawnRate, maxHeight);
+    }
+
+    public static void generateOre(Identifier identifier, Block block, OreFeatureConfig.Target target, int veinSize, int spawnRate, int maxHeight) {
+        ConfiguredFeature<?, ?> CONFIGURED_FEATURE = new ConfiguredFeature(Feature.ORE,
+                new OreFeatureConfig(target.target, block.getDefaultState(), veinSize));
+
+        PlacedFeature PLACED_FEATURE = new PlacedFeature(RegistryEntry.of(CONFIGURED_FEATURE),
+                Arrays.asList(CountPlacementModifier.of(spawnRate), SquarePlacementModifier.of(), HeightRangePlacementModifier.uniform(YOffset.getBottom(), YOffset.fixed(maxHeight))));
+
+        Registry.register(BuiltinRegistries.CONFIGURED_FEATURE,
+                identifier, CONFIGURED_FEATURE);
+        Registry.register(BuiltinRegistries.PLACED_FEATURE, identifier,
+                PLACED_FEATURE);
+
+        Predicate<BiomeSelectionContext> predicate = BiomeSelectors.all();
+        BiomeModifications.addFeature(predicate, GenerationStep.Feature.UNDERGROUND_ORES,
+                RegistryKey.of(Registry.PLACED_FEATURE_KEY, identifier));
     }
 
     public static void generateOreInStone(Biome biome, Block block, int veinSize, int spawnRate, int maxHeight) {
-        biome.addFeature(GenerationStep.Feature.UNDERGROUND_ORES, Biome.configureFeature(net.minecraft.world.gen.feature.Feature.ORE, new OreFeatureConfig(OreFeatureConfig.Target.NATURAL_STONE, block.getDefaultState(), veinSize), Decorator.COUNT_RANGE, new RangeDecoratorConfig(spawnRate, 0, 0, maxHeight)));
+        generateOreInStone(new Identifier("abusedlib", Registry.ITEM.getId(block.asItem()).getPath() + "_ore"), biome, block, veinSize, spawnRate, maxHeight);
+    }
+
+    public static void generateOreInStone(Identifier identifier, Biome biome, Block block, int veinSize, int spawnRate, int maxHeight) {
+        ConfiguredFeature<?, ?> CONFIGURED_FEATURE = new ConfiguredFeature(Feature.ORE,
+                new OreFeatureConfig(OreConfiguredFeatures.STONE_ORE_REPLACEABLES, block.getDefaultState(), veinSize));
+
+        PlacedFeature PLACED_FEATURE = new PlacedFeature(RegistryEntry.of(CONFIGURED_FEATURE),
+                Arrays.asList(CountPlacementModifier.of(spawnRate), SquarePlacementModifier.of(), HeightRangePlacementModifier.uniform(YOffset.getBottom(), YOffset.fixed(maxHeight))));
+
+        Registry.register(BuiltinRegistries.CONFIGURED_FEATURE,
+                identifier, CONFIGURED_FEATURE);
+        Registry.register(BuiltinRegistries.PLACED_FEATURE, identifier,
+                PLACED_FEATURE);
+
+        Predicate<BiomeSelectionContext> predicate = BiomeSelectors.includeByKey(BuiltinRegistries.BIOME.getKey(biome).get());
+        BiomeModifications.addFeature(predicate, GenerationStep.Feature.UNDERGROUND_ORES,
+                RegistryKey.of(Registry.PLACED_FEATURE_KEY, identifier));
+
     }
 }

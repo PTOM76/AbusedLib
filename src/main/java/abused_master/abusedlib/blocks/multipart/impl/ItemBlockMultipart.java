@@ -29,7 +29,7 @@ public class ItemBlockMultipart extends BlockItem {
             IMultipartHost multipartHost = (IMultipartHost) world.getBlockEntity(pos);
 
             if(!multipartHost.hasMultipart(direction)) {
-                if(multipartHost.tryAddMultipart(direction, (IMultipart) ((BlockWithEntity) Block.getBlockFromItem(stack.getItem())).createBlockEntity(world))) {
+                if(multipartHost.tryAddMultipart(direction, (IMultipart) ((BlockWithEntity) Block.getBlockFromItem(stack.getItem())).createBlockEntity(pos, context.getWorld().getBlockState(pos)))) {
                     stack.decrement(1);
                     return ActionResult.SUCCESS;
                 }

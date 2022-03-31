@@ -1,7 +1,7 @@
 package abused_master.abusedlib.client.shaders;
 
 import abused_master.abusedlib.AbusedLib;
-import com.mojang.blaze3d.platform.GLX;
+//import com.mojang.blaze3d.platform.GLX;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.ARBShaderObjects;
@@ -18,36 +18,36 @@ public class ShaderHelper {
 
     //Example - loadShaderProgram(new Identifier("MODID", "/shaders/testVS.vs"), new Identifier("MODID", "/shaders/testFS.fs"));
     public static int loadShaderProgram(Identifier vshID, Identifier fshID) {
-        int vertexShader = createShader(vshID, GLX.GL_VERTEX_SHADER);
-        int fragmentShader = createShader(fshID, GLX.GL_FRAGMENT_SHADER);
-        int program = GLX.glCreateProgram();
-        GLX.glAttachShader(program, vertexShader);
-        GLX.glAttachShader(program, fragmentShader);
-        GLX.glLinkProgram(program);
+        int vertexShader = createShader(vshID, GL20.GL_VERTEX_SHADER);
+        int fragmentShader = createShader(fshID, GL20.GL_FRAGMENT_SHADER);
+        int program = GL20.glCreateProgram();
+        GL20.glAttachShader(program, vertexShader);
+        GL20.glAttachShader(program, fragmentShader);
+        GL20.glLinkProgram(program);
 
         return program;
     }
 
     public static int loadVertexShaderProgram(Identifier vshID) {
-        int vertexShader = createShader(vshID, GLX.GL_VERTEX_SHADER);
-        int program = GLX.glCreateProgram();
-        GLX.glAttachShader(program, vertexShader);
-        GLX.glLinkProgram(program);
+        int vertexShader = createShader(vshID, GL20.GL_VERTEX_SHADER);
+        int program = GL20.glCreateProgram();
+        GL20.glAttachShader(program, vertexShader);
+        GL20.glLinkProgram(program);
 
         return program;
     }
 
     public static int loadFragmentShaderProgram(Identifier fshID) {
-        int fragmentShader = createShader(fshID, GLX.GL_FRAGMENT_SHADER);
-        int program = GLX.glCreateProgram();
-        GLX.glAttachShader(program, fragmentShader);
-        GLX.glLinkProgram(program);
+        int fragmentShader = createShader(fshID, GL20.GL_FRAGMENT_SHADER);
+        int program = GL20.glCreateProgram();
+        GL20.glAttachShader(program, fragmentShader);
+        GL20.glLinkProgram(program);
 
         return program;
     }
 
     public static int createShader(Identifier shaderFile, int shaderType) {
-        int shader = GLX.glCreateShader(shaderType);
+        int shader = GL20.glCreateShader(shaderType);
 
         if(shader == 0) {
             return 0;
@@ -59,9 +59,9 @@ public class ShaderHelper {
             e.printStackTrace();
         }
 
-        GLX.glCompileShader(shader);
+        GL20.glCompileShader(shader);
 
-        if(GL20.glGetShaderi(shader, GLX.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+        if(GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
             throw new RuntimeException("Error creating shader: " + getLogInfo(shader));
         }
 

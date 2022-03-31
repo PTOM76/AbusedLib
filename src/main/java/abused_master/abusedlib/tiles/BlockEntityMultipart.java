@@ -6,13 +6,17 @@ import abused_master.abusedlib.blocks.multipart.IMultipartHost;
 import abused_master.abusedlib.utils.MultipartHelper;
 import com.google.common.collect.Maps;
 import net.fabricmc.fabric.api.util.NbtType;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.util.Tickable;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
+import java.util.Random;
 
 /**
  * Template multipart block entity class, extend this or create your own.
@@ -21,53 +25,59 @@ public class BlockEntityMultipart extends BlockEntityBase implements IMultipartH
 
     public EnumMap<Direction, IMultipart> multiparts = Maps.newEnumMap(Direction.class);
 
-    public BlockEntityMultipart() {
-        super(AbusedLib.MULTIPART);
+    public BlockEntityMultipart(BlockPos pos, BlockState state) {
+        super(AbusedLib.MULTIPART, pos, state);
     }
 
     @Override
-    public void fromTag(CompoundTag tag) {
-        super.fromTag(tag);
+    public void readNbt(NbtCompound tag) {
+        super.readNbt(tag);
 
-        if(tag.containsKey("multipartList")) {
+        if(tag.contains("multipartList")) {
             this.multiparts.clear();
-            ListTag listTag = tag.getList("multipartList", NbtType.COMPOUND);
+            NbtList NbtList = tag.getList("multipartList", NbtType.COMPOUND);
 
-            for (int i = 0; i < listTag.size(); i++) {
-                CompoundTag dataTag = listTag.getCompoundTag(i);
+            for (int i = 0; i < NbtList.size(); i++) {
+                NbtCompound dataTag = NbtList.getCompound(i);
                 Direction direction = Direction.byId(dataTag.getInt("direction"));
-                IMultipart multipart = MultipartHelper.deserialize(dataTag);
+                IMultipart multipart = MultipartHelper.deserialize(dataTag, this.getPos(), this.getCachedState());
                 this.multiparts.put(direction, multipart);
             }
         }
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag) {
-        super.toTag(tag);
+    public void writeNbt(NbtCompound tag) {
+        super.writeNbt(tag);
 
         if(!multiparts.isEmpty()) {
-            ListTag listTag = new ListTag();
+            NbtList NbtList = new NbtList();
 
             for (Direction direction : multiparts.keySet()) {
-                CompoundTag dataTag = new CompoundTag();
+                NbtCompound dataTag = new NbtCompound();
                 dataTag.putInt("direction", direction.ordinal());
                 MultipartHelper.serialize(multiparts.get(direction), dataTag);
-                listTag.add(dataTag);
+                NbtList.add(dataTag);
             }
 
-            tag.put("multipartList", listTag);
+            tag.put("multipartList", NbtList);
         }
-
-        return tag;
     }
 
     @Override
     public void tick() {
         super.tick();
         for (IMultipart multipart : multiparts.values()) {
-            if(multipart.getMultipartEntity() instanceof Tickable) {
-                ((Tickable) multipart.getMultipartEntity()).tick();
+            BlockEntity tile = multipart.getMultipartEntity();
+            if(tile.getCachedState().hasRandomTicks()) {
+                if (!tile.getWorld().isClient)
+                    tile.getCachedState().randomTick((ServerWorld) tile.getWorld(), tile.getPos(), new Random());
+            }
+            if (world.isClient()) {
+                if (tile instanceof net.minecraft.client.util.ClientPlayerTickable) {
+                    ((net.minecraft.client.util.ClientPlayerTickable) tile).tick();
+                }
+
             }
         }
     }

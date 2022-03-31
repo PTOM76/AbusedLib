@@ -7,10 +7,11 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.text.LiteralText;
-import net.minecraft.text.Style;
-import net.minecraft.util.Formatting;
+//import net.minecraft.text.Style;
+//import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,15 +26,15 @@ public abstract class MixinStructureBlockBlockEntity {
     private String author;
 
     @Shadow
-    private BlockPos size;
+    private Vec3i size;
 
     @Shadow
     private Identifier structureName;
 
-    @Inject(method = "Lnet/minecraft/block/entity/StructureBlockBlockEntity;saveStructure(Z)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/structure/Structure;setAuthor(Ljava/lang/String;)V", shift = At.Shift.AFTER), cancellable = true, locals = LocalCapture.CAPTURE_FAILHARD)
+    @Inject(method = "saveStructure(Z)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/structure/Structure;setAuthor(Ljava/lang/String;)V", shift = At.Shift.AFTER), cancellable = true, locals = LocalCapture.CAPTURE_FAILHARD)
     private void saveStructure(boolean save, CallbackInfoReturnable<Boolean> cir, BlockPos pos, ServerWorld serverWorld, StructureManager structureManager, Structure structure) {
         if(save && !author.isEmpty() && !((StructureBlockBlockEntity) (Object) this).getWorld().isClient()) {
-            BlockPos pos2 = size.add(pos).add(-1, -1, -1);
+            Vec3i pos2 = size.add(pos).add(-1, -1, -1);
             BlockPos minCorner = new BlockPos(Math.min(pos.getX(), pos2.getX()), Math.min(pos.getY(), pos2.getY()), Math.min(pos.getZ(), pos2.getZ()));
 
             ServerWorld world = (ServerWorld) ((StructureBlockBlockEntity) (Object) this).getWorld();
@@ -41,7 +42,7 @@ public abstract class MixinStructureBlockBlockEntity {
 
             if(player != null && MultiBlockBuilder.playerCommandCache.containsKey(player.getUuid())) {
                 MultiBlockBuilder.createMultiBlock(serverWorld, MultiBlockBuilder.playerCommandCache.get(player.getUuid()), minCorner, structure, structureName.getPath() + ".json");
-                player.addChatMessage(new LiteralText("Successfully saved multiblock " + structureName.getPath() + ".json").setStyle(new Style().setColor(Formatting.GOLD)), false);
+                player.sendMessage(new LiteralText("§6Successfully saved multiblock " + structureName.getPath() + ".json"), false);
                 cir.setReturnValue(true);
             }
         }

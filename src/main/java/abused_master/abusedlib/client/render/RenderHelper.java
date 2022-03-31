@@ -2,6 +2,7 @@ package abused_master.abusedlib.client.render;
 
 import abused_master.abusedlib.fluid.FluidStack;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
@@ -9,8 +10,10 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
 public class RenderHelper {
@@ -20,7 +23,7 @@ public class RenderHelper {
 
     public static void renderLaser(double firstX, double firstY, double firstZ, double secondX, double secondY, double secondZ, double rotationTime, float alpha, double beamWidth, float[] color) {
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder render = tessellator.getBufferBuilder();
+        BufferBuilder render = tessellator.getBuffer();
         World world = MinecraftClient.getInstance().world;
 
         float r = color[0];
@@ -37,21 +40,22 @@ public class RenderHelper {
 
         double length = combinedVec.length();
 
-        GlStateManager.pushMatrix();
+        GL11.glPushMatrix();
 
-        GlStateManager.disableLighting();
-        GlStateManager.enableBlend();
-        GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+        DiffuseLighting.disableGuiDepthLighting();
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE);
         int func = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC);
         float ref = GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF);
-        GlStateManager.alphaFunc(GL11.GL_ALWAYS, 0);
-        GlStateManager.translated(firstX - BlockEntityRenderDispatcher.renderOffsetX, firstY - BlockEntityRenderDispatcher.renderOffsetY, firstZ - BlockEntityRenderDispatcher.renderOffsetZ);
-        GlStateManager.rotatef((float) (180 * yaw / Math.PI), 0, 1, 0);
-        GlStateManager.rotatef((float) (180 * pitch / Math.PI), 0, 0, 1);
-        GlStateManager.rotatef((float) rot, 1, 0, 0);
+        GL11.glAlphaFunc(GL11.GL_ALWAYS, 0);
+        Quaternion renderOffset = MinecraftClient.getInstance().getEntityRenderDispatcher().getRotation();
+        GL11.glTranslated(firstX - renderOffset.getX(), firstY - renderOffset.getY(), firstZ - renderOffset.getZ());
+        GL11.glRotatef((float) (180 * yaw / Math.PI), 0, 1, 0);
+        GL11.glRotatef((float) (180 * pitch / Math.PI), 0, 0, 1);
+        GL11.glRotatef((float) rot, 1, 0, 0);
 
-        GlStateManager.disableTexture();
-        render.begin(GL11.GL_QUADS, VertexFormats.POSITION_UV_LMAP_COLOR);
+        RenderSystem.disableTexture();
+        render.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
         for (double i = 0; i < 4; i++) {
             double width = beamWidth * (i / 4.0);
             render.vertex(length, width, width).texture(0, 0).texture(MAX_LIGHT_X, MAX_LIGHT_Y).color(r, g, b, alpha).next();
@@ -76,54 +80,55 @@ public class RenderHelper {
         }
         tessellator.draw();
 
-        GlStateManager.enableTexture();
+        RenderSystem.enableTexture();
 
-        GlStateManager.alphaFunc(func, ref);
-        GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        GlStateManager.disableBlend();
-        GlStateManager.enableLighting();
-        GlStateManager.popMatrix();
+        GL11.glAlphaFunc(func, ref);
+        RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
+        RenderSystem.disableBlend();
+        DiffuseLighting.enableGuiDepthLighting();
+        GL11.glPopMatrix();
     }
 
     public static void renderTexture(float size, float[] color) {
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferBuilder =tessellator.getBufferBuilder();
+        BufferBuilder bufferBuilder =tessellator.getBuffer();
         double uv1 = 0.0D;
         double uv2 = 1.0D;
 
-        GlStateManager.color4f(color[0], color[1], color[2], color[3]);
-        bufferBuilder.begin(GL11.GL_QUADS, VertexFormats.POSITION_UV);
-        bufferBuilder.vertex(size / 2f, size / 2f, 0.0D).texture(uv1, uv2).next();
-        bufferBuilder.vertex(size / 2f, -size / 2f, 0.0D).texture(uv1, uv1).next();
-        bufferBuilder.vertex(-size / 2f, -size / 2f, 0.0D).texture(uv2, uv1).next();
-        bufferBuilder.vertex(-size / 2f, size / 2f, 0.0D).texture(uv2, uv2).next();
+        GL11.glColor4f(color[0], color[1], color[2], color[3]);
+        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
+        bufferBuilder.vertex(size / 2f, size / 2f, 0.0D).texture((float)uv1, (float)uv2).next();
+        bufferBuilder.vertex(size / 2f, -size / 2f, 0.0D).texture((float)uv1, (float)uv1).next();
+        bufferBuilder.vertex(-size / 2f, -size / 2f, 0.0D).texture((float)uv2, (float)uv1).next();
+        bufferBuilder.vertex(-size / 2f, size / 2f, 0.0D).texture((float)uv2, (float)uv2).next();
         tessellator.draw();
     }
 
     public static void translateAgainstPlayer(BlockPos pos, boolean offset) {
-        float x = (float) (pos.getX() - BlockEntityRenderDispatcher.renderOffsetX);
-        float y = (float) (pos.getY() - BlockEntityRenderDispatcher.renderOffsetY);
-        float z = (float) (pos.getZ() - BlockEntityRenderDispatcher.renderOffsetZ);
+        Quaternion renderOffset = MinecraftClient.getInstance().getEntityRenderDispatcher().getRotation();
+        float x = (float) (pos.getX() - renderOffset.getX());
+        float y = (float) (pos.getY() - renderOffset.getY());
+        float z = (float) (pos.getZ() - renderOffset.getZ());
 
         if (offset) {
-            GlStateManager.translated(x + 0.5, y + 0.5, z + 0.5);
+            GL11.glTranslated(x + 0.5, y + 0.5, z + 0.5);
         } else {
-            GlStateManager.translated(x, y, z);
+            GL11.glTranslated(x, y, z);
         }
     }
 
     public static void renderFluid(FluidStack fluid, BlockPos pos, double x, double y, double z, double x1, double y1, double z1, double x2, double y2, double z2) {
         MinecraftClient mc = MinecraftClient.getInstance();
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBufferBuilder();
+        BufferBuilder buffer = tessellator.getBuffer();
         int brightness = mc.world.getLightLevel(pos);
 
-        buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_UV_NORMAL);
-        mc.getTextureManager().bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
+        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
+        mc.getTextureManager().bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
         setupRenderState();
-        GlStateManager.translated(x, y, z);
+        GL11.glTranslated(x, y, z);
 
-        Sprite sprite = mc.getBakedModelManager().getBlockStateMaps().getSprite(fluid.getFluid().getDefaultState().getBlockState());
+        Sprite sprite = mc.getBakedModelManager().getBlockModels().getModelParticleSprite(fluid.getFluid().getDefaultState().getBlockState());
         addTexturedQuad(buffer, sprite, x1, y1, z1, x2 - x1, y2 - y1, z2 - z1, Direction.DOWN, brightness);
         addTexturedQuad(buffer, sprite, x1, y1, z1, x2 - x1, y2 - y1, z2 - z1, Direction.NORTH, brightness);
         addTexturedQuad(buffer, sprite, x1, y1, z1, x2 - x1, y2 - y1, z2 - z1, Direction.EAST, brightness);
@@ -137,10 +142,10 @@ public class RenderHelper {
     }
 
     public static void setupRenderState() {
-        GlStateManager.pushMatrix();
-        GuiLighting.disable();
-        GlStateManager.enableBlend();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glPushMatrix();
+        DiffuseLighting.disableGuiDepthLighting();
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
         if (MinecraftClient.isAmbientOcclusionEnabled()) {
             GL11.glShadeModel(GL11.GL_SMOOTH);
@@ -197,29 +202,38 @@ public class RenderHelper {
             case DOWN:
 
             case UP:
+                /*
                 minU = sprite.getU(u * size);
                 maxU = sprite.getU(u1 * size);
                 minV = sprite.getV(vz * size);
                 maxV = sprite.getV(vz1 * size);
                 break;
+                
+                 */
 
             case NORTH:
 
             case SOUTH:
+                /*
                 minU = sprite.getU(u1 * size);
                 maxU = sprite.getU(u * size);
                 minV = sprite.getV(vy * size);
                 maxV = sprite.getV(vy1 * size);
                 break;
+                
+                 */
 
             case WEST:
 
             case EAST:
+                /*
                 minU = sprite.getU(vz1 * size);
                 maxU = sprite.getU(vz * size);
                 minV = sprite.getV(vy * size);
                 maxV = sprite.getV(vy1 * size);
                 break;
+                
+                 */
 
             default:
                 minU = sprite.getMinU();
@@ -230,52 +244,52 @@ public class RenderHelper {
 
         switch (face) {
             case DOWN:
-                buffer.vertex(x, y, z).texture(minU, minV).texture(light1, light2).next();
-                buffer.vertex(x2, y, z).texture(maxU, minV).texture(light1, light2).next();
-                buffer.vertex(x2, y, z2).texture(maxU, maxV).texture(light1, light2).next();
-                buffer.vertex(x, y, z2).texture(minU, maxV).texture(light1, light2).next();
+                buffer.vertex(x, y, z).texture((float) minU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x2, y, z).texture((float)maxU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x2, y, z2).texture((float)maxU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x, y, z2).texture((float)minU, (float)maxV).texture(light1, light2).next();
                 break;
 
             case UP:
-                buffer.vertex(x, y2, z).texture(minU, minV).texture(light1, light2).next();
-                buffer.vertex(x, y2, z2).texture(minU, maxV).texture(light1, light2).next();
-                buffer.vertex(x2, y2, z2).texture(maxU, maxV).texture(light1, light2).next();
-                buffer.vertex(x2, y2, z).texture(maxU, minV).texture(light1, light2).next();
+                buffer.vertex(x, y2, z).texture((float)minU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x, y2, z2).texture((float)minU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x2, y2, z2).texture((float)maxU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x2, y2, z).texture((float)maxU, (float)minV).texture(light1, light2).next();
                 break;
 
             case NORTH:
-                buffer.vertex(x, y, z).texture(minU, maxV).texture(light1, light2).next();
-                buffer.vertex(x, y2, z).texture(minU, minV).texture(light1, light2).next();
-                buffer.vertex(x2, y2, z).texture(maxU, minV).texture(light1, light2).next();
-                buffer.vertex(x2, y, z).texture(maxU, maxV).texture(light1, light2).next();
+                buffer.vertex(x, y, z).texture((float)minU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x, y2, z).texture((float)minU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x2, y2, z).texture((float)maxU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x2, y, z).texture((float)maxU, (float)maxV).texture(light1, light2).next();
                 break;
 
             case SOUTH:
-                buffer.vertex(x, y, z2).texture(maxU, maxV).texture(light1, light2).next();
-                buffer.vertex(x2, y, z2).texture(minU, maxV).texture(light1, light2).next();
-                buffer.vertex(x2, y2, z2).texture(minU, minV).texture(light1, light2).next();
-                buffer.vertex(x, y2, z2).texture(maxU, minV).texture(light1, light2).next();
+                buffer.vertex(x, y, z2).texture((float)maxU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x2, y, z2).texture((float)minU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x2, y2, z2).texture((float)minU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x, y2, z2).texture((float)maxU, (float)minV).texture(light1, light2).next();
                 break;
 
             case WEST:
-                buffer.vertex(x, y, z).texture(maxU, maxV).texture(light1, light2).next();
-                buffer.vertex(x, y, z2).texture(minU, maxV).texture(light1, light2).next();
-                buffer.vertex(x, y2, z2).texture(minU, minV).texture(light1, light2).next();
-                buffer.vertex(x, y2, z).texture(maxU, minV).texture(light1, light2).next();
+                buffer.vertex(x, y, z).texture((float)maxU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x, y, z2).texture((float)minU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x, y2, z2).texture((float)minU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x, y2, z).texture((float)maxU, (float)minV).texture(light1, light2).next();
                 break;
 
             case EAST:
-                buffer.vertex(x2, y, z).texture(minU, maxV).texture(light1, light2).next();
-                buffer.vertex(x2, y2, z).texture(minU, minV).texture(light1, light2).next();
-                buffer.vertex(x2, y2, z2).texture(maxU, minV).texture(light1, light2).next();
-                buffer.vertex(x2, y, z2).texture(maxU, maxV).texture(light1, light2).next();
+                buffer.vertex(x2, y, z).texture((float)minU, (float)maxV).texture(light1, light2).next();
+                buffer.vertex(x2, y2, z).texture((float)minU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x2, y2, z2).texture((float)maxU, (float)minV).texture(light1, light2).next();
+                buffer.vertex(x2, y, z2).texture((float)maxU, (float)maxV).texture(light1, light2).next();
                 break;
         }
     }
 
     public static void cleanupRenderState() {
-        GlStateManager.disableBlend();
-        GlStateManager.popMatrix();
-        GuiLighting.enable();
+        RenderSystem.disableBlend();
+        GL11.glPopMatrix();
+        DiffuseLighting.enableGuiDepthLighting();
     }
 }

@@ -9,7 +9,7 @@ public class AbusedLibClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ClientTickCallback.EVENT.register(client -> {
-            if(client.currentScreen == null || !client.currentScreen.isPauseScreen()) {
+            if(client.currentScreen == null || !client.currentScreen.shouldPause()) {
                 ShaderHelper.ticksInGame++;
             }
         });

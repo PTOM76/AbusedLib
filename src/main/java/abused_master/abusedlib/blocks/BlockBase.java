@@ -1,15 +1,17 @@
 package abused_master.abusedlib.blocks;
 
 import com.google.common.collect.Lists;
-import net.fabricmc.fabric.api.block.FabricBlockSettings;
+//import net.fabricmc.fabric.api.block.FabricBlockSettings;
+import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.loot.context.LootContext;
+//import net.minecraft.world.loot.context.LootContext;
 
 import java.util.List;
 
@@ -19,7 +21,7 @@ public class BlockBase extends Block {
     private ItemGroup tab;
 
     public BlockBase(String name, Material material, float hardness, ItemGroup itemGroup) {
-        super(FabricBlockSettings.of(material).hardness(hardness).build());
+        super(FabricBlockSettings.of(material).hardness(hardness));
         this.name = name;
         this.tab = itemGroup;
     }

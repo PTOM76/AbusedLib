@@ -12,7 +12,6 @@ import net.minecraft.item.ItemGroup;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
@@ -36,7 +35,7 @@ public class BlockMultipartHost extends BlockWithEntityBase {
 
     @Nullable
     @Override
-    public BlockEntity createBlockEntity(BlockView blockView) {
-        return new BlockEntityMultipart();
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        return new BlockEntityMultipart(pos, state);
     }
 }

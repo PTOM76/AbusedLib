@@ -1,7 +1,7 @@
 package abused_master.abusedlib.fluid;
 
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 
 public interface IFluidContainer {
 
@@ -23,7 +23,7 @@ public interface IFluidContainer {
 
     void setBlockEntity(BlockEntity blockEntity);
 
-    FluidContainer readFromNBT(CompoundTag nbt);
+    FluidContainer readFromNBT(NbtCompound nbt);
 
-    CompoundTag writeToNBT(CompoundTag nbt);
+    NbtCompound writeToNBT(NbtCompound nbt);
 }

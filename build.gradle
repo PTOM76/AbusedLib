@@ -1,17 +1,14 @@
 plugins {
-	id 'fabric-loom' version '0.2.4-SNAPSHOT'
+	id 'fabric-loom' version '0.11-SNAPSHOT'
 	id 'maven-publish'
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 group = project.mod_group
 archivesBaseName = project.mod_name
 version = project.mod_version
-
-minecraft {
-}
 
 repositories {
 	jcenter()
@@ -19,12 +16,14 @@ repositories {
 }
 
 dependencies {
-	minecraft "com.mojang:minecraft:${mc_version}"
-	mappings "net.fabricmc:yarn:${yarn_mappings}"
-	modCompile "net.fabricmc:fabric-loader:${loader_version}"
-	modCompile "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-	modCompile "de.javagl:obj:${javagl_version}"
-	include "de.javagl:obj:${javagl_version}"
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	modImplementation "de.javagl:obj:${javagl_version}"
+	//include "de.javagl:obj:${javagl_version}"
 	
 	compileOnly "com.google.code.findbugs:jsr305:${findbugs_version}"
 }
@@ -35,15 +34,21 @@ jar {
 			"Implementation-Title": project.name,
 			"Implementation-Version": project.version,
 			"Maven-Artifact": "${project.group}:${project.archivesBaseName}:${project.version}".toLowerCase(Locale.ROOT),
-			"Built-On-Minecraft": "${mc_version}",
+			"Built-On-Minecraft": "${minecraft_version}",
 			"Built-On-Java": "${System.getProperty("java.vm.version")} (${System.getProperty("java.vm.vendor")})"
 	)
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
+java {
+	withSourcesJar()
+}
+
+/*task sourcesJar(type: Jar, dependsOn: classes) {
 	from sourceSets.main.allSource
 	classifier = 'sources'
 }
+
+ */
 
 artifacts {
 	archives sourcesJar
@@ -51,6 +56,37 @@ artifacts {
 
 publishing {
 	publications {
+		mavenJava(MavenPublication) {
+			// add all the jars that should be included when publishing to maven
+			artifact(remapJar) {
+				builtBy remapJar
+			}
+			artifact(sourcesJar) {
+				builtBy remapSourcesJar
+			}
+			artifact sourcesJar
+			pom {
+				name = "AbusedLib"
+				url = "https://github.com/abused/AbusedLib"
+				licenses {
+					license {
+						name = "MIT License"
+						url = "https://github.com/abused/AbusedLib/blob/master/LICENSE.md"
+					}
+				}
+				scm {
+					url = "https://github.com/abused/AbusedLib"
+					connection = "scm:git:git://github.com/abused/AbusedLib.git"
+					developerConnection = "scm:git:git@github.com:abused/AbusedLib.git"
+				}
+				issueManagement {
+					system = "github"
+					url = "https://github.com/abused/AbusedLib/issues"
+				}
+			}
+		}
+	}
+	/*publications {
 		mavenJava(MavenPublication) {
 			afterEvaluate {
 				artifact remapJar.output
@@ -77,6 +113,8 @@ publishing {
 			}
 		}
 	}
+
+	 */
 
 	repositories {
 		if (project.hasProperty("maven_user") && project.hasProperty("maven_pass")) {

@@ -20,7 +20,7 @@ public class MultiBlockReloadListener implements SimpleSynchronousResourceReload
     }
 
     @Override
-    public void apply(ResourceManager resourceManager) {
+    public void reload(ResourceManager resourceManager) {
         MultiBlockBuilder.loadedMultiblocks.clear();
 
         for (Identifier identifier : resourceManager.findResources("multiblocks", s -> s.endsWith(".json"))) {

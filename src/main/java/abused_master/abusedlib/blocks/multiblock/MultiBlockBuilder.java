@@ -6,16 +6,14 @@ import com.google.common.collect.Maps;
 import com.google.gson.*;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
-import net.fabricmc.fabric.api.tag.TagRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Block;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.structure.Structure;
 import net.minecraft.tag.Tag;
-import net.minecraft.text.BaseText;
+import net.minecraft.tag.TagKey;
 import net.minecraft.text.LiteralText;
-import net.minecraft.text.Style;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -24,12 +22,13 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.apache.commons.io.IOUtils;
 
-import java.awt.*;
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.List;
 
 /**
  * A builder class used for saving, creating, loading, and checking custom MultiBlocks using a custom JSON format
@@ -55,11 +54,10 @@ public class MultiBlockBuilder {
 
                     if(!activatedCommands.contains(player.getUuid())) {
                         activatedCommands.add(player.getUuid());
-                        player.addChatMessage(new LiteralText("Right click the center MultiBlock!").setStyle(new Style().setColor(Formatting.GOLD)), false);
+                        player.sendMessage(new LiteralText("§6Right click the center MultiBlock!"), false);
                     }else {
                         activatedCommands.remove(player.getUuid());
-                        player.addChatMessage(new LiteralText("Canceled MultiBlock creation!") {
-                        }.setStyle(new Style().setColor(Formatting.GOLD)), false);
+                        player.sendMessage(new LiteralText("§6Canceled MultiBlock creation!"), false);
                     }
 
                     return 1;
@@ -71,7 +69,7 @@ public class MultiBlockBuilder {
             if(activatedCommands.contains(player.getUuid())) {
                 playerCommandCache.put(player.getUuid(), hitResult.getBlockPos());
                 activatedCommands.remove(player.getUuid());
-                player.addChatMessage(new LiteralText("Saved block as center for MultiBlock!").setStyle(new Style().setColor(Formatting.GOLD)), false);
+                player.sendMessage(new LiteralText("§6Saved block as center for MultiBlock!"), false);
                 return ActionResult.SUCCESS;
             }
 
@@ -119,7 +117,7 @@ public class MultiBlockBuilder {
             JsonArray blockPosArray = componentObject.get("pos").getAsJsonArray();
             BlockPos blockPos = new BlockPos(blockPosArray.get(0).getAsInt(), blockPosArray.get(1).getAsInt(), blockPosArray.get(2).getAsInt());
             String blockName = componentObject.get("block").getAsString();
-            Object block = blockName.startsWith("#") ? TagRegistry.block(new Identifier(blockName.replace("#", ""))) : Registry.BLOCK.get(new Identifier(blockName));
+            Object block = blockName.startsWith("#") ? TagKey.of(Registry.BLOCK_KEY, new Identifier(blockName.replace("#", ""))) : Registry.BLOCK.get(new Identifier(blockName));
 
             if (blockPosArray == null || blockPos == null || block == null) {
                 AbusedLib.LOGGER.warn("NULL! A component in the MultiBlock structure has returned null! BlockPosArray: " + blockPosArray.getAsString() + ", BlockPos: " + blockPos.toString() + " Component Block: " + blockName);
@@ -238,7 +236,7 @@ public class MultiBlockBuilder {
                 if(direction == Direction.UP || direction == Direction.DOWN) {
                     offsetPos = centerPos.subtract(multiBlock.getCentralPoint()).add(templatePos);
                 }else {
-                    offsetPos = Structure.method_15168(centerPos.subtract(multiBlock.getCentralPoint()).add(templatePos), BlockMirror.NONE, toRotation(direction.getOpposite()), centerPos);
+                    offsetPos = Structure.transformAround(centerPos.subtract(multiBlock.getCentralPoint()).add(templatePos), BlockMirror.NONE, toRotation(direction.getOpposite()), centerPos);
                 }
 
                 if(block instanceof Block) {
@@ -246,7 +244,7 @@ public class MultiBlockBuilder {
                         break;
                     }
                 }else if(block instanceof Tag) {
-                    if(!((Tag<Block>) block).contains(world.getBlockState(offsetPos).getBlock())) {
+                    if(!((Tag<Block>) block).values().contains(world.getBlockState(offsetPos).getBlock())) {
                         break;
                     }
                 }
@@ -271,13 +269,14 @@ public class MultiBlockBuilder {
         if (multiBlock.getCentralPoint() != null && toRotation(direction) != null) {
             for (Iterator<BlockPos> it = multiBlock.getMultiblockComponents().keySet().iterator(); it.hasNext(); ) {
                 BlockPos pos = it.next();
-                BlockPos offsetPos = Structure.method_15168(centerPos.subtract(multiBlock.getCentralPoint()).add(pos), BlockMirror.NONE, toRotation(direction.getOpposite()), centerPos);
+                BlockPos offsetPos = Structure.transformAround(centerPos.subtract(multiBlock.getCentralPoint()).add(pos), BlockMirror.NONE, toRotation(direction.getOpposite()), centerPos);
                 Object block = multiBlock.getComponent(pos);
 
                 if (block instanceof Block) {
                     world.setBlockState(offsetPos, ((Block) block).getDefaultState());
                 } else if (block instanceof Tag) {
-                    world.setBlockState(offsetPos, ((Tag<Block>) block).getRandom(new Random()).getDefaultState());
+                    Tag<Block> tag = (Tag<Block>)block;
+                    world.setBlockState(offsetPos, tag.values().get(new Random().nextInt(tag.values().size())).getDefaultState());
                 }
 
                 if (!it.hasNext()) {

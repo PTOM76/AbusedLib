@@ -1,35 +1,39 @@
 package abused_master.abusedlib.tiles;
 
-import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
+//import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.Tickable;
+//import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
+import net.minecraft.client.util.ClientPlayerTickable;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.Packet;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+//import net.minecraft.util.Tickable;
+import net.minecraft.util.math.BlockPos;
 
-public abstract class BlockEntityBase extends BlockEntity implements Tickable, BlockEntityClientSerializable {
+import javax.annotation.Nullable;
 
-    public BlockEntityBase(BlockEntityType<?> blockEntityType_1) {
-        super(blockEntityType_1);
+public abstract class BlockEntityBase extends BlockEntity implements ClientPlayerTickable {
+
+    public BlockEntityBase(BlockEntityType<?> blockEntityType_1, BlockPos pos, BlockState state) {
+        super(blockEntityType_1, pos, state);
     }
 
     @Override
     public void tick() {
     }
 
+    @Nullable
     @Override
-    public void fromClientTag(CompoundTag tag) {
-        this.fromTag(tag);
+    public Packet<ClientPlayPacketListener> toUpdatePacket() {
+        return BlockEntityUpdateS2CPacket.create(this);
     }
 
     @Override
-    public CompoundTag toClientTag(CompoundTag tag) {
-        return this.toTag(tag);
-    }
-
-    @Override
-    public BlockEntityUpdateS2CPacket toUpdatePacket() {
-        return new BlockEntityUpdateS2CPacket(this.pos, 0, this.toInitialChunkDataTag());
+    public NbtCompound toInitialChunkDataNbt() {
+        return createNbt();
     }
 
     public void updateEntity() {

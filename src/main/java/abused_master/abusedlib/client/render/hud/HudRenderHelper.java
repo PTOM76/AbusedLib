@@ -1,8 +1,10 @@
 package abused_master.abusedlib.client.render.hud;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+//import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.util.math.Direction;
 import org.lwjgl.opengl.GL11;
 
@@ -14,47 +16,49 @@ import java.util.List;
 public class HudRenderHelper {
 
     public static void renderHud(List<String> messages, HudPlacement hudPlacement, HudOrientation hudOrientation, Direction orientation, double x, double y, double z, float scale) {
-        GlStateManager.pushMatrix();
+        //GlStateManager.pushMatrix();
+        GL11.glPushMatrix();
 
         if (hudPlacement == HudPlacement.HUD_FRONT) {
-            GlStateManager.translatef((float) x + 0.5F, (float) y + 0.75F, (float) z + 0.5F);
+            //GlStateManager.translatef((float) x + 0.5F, (float) y + 0.75F, (float) z + 0.5F);
+            GL11.glTranslatef((float) x + 0.5F, (float) y + 0.75F, (float) z + 0.5F);
         } else if (hudPlacement == HudPlacement.HUD_CENTER) {
-            GlStateManager.translatef((float) x + 0.5F, (float) y + 0.5F, (float) z + 0.5F);
+            GL11.glTranslatef((float) x + 0.5F, (float) y + 0.5F, (float) z + 0.5F);
         } else {
-            GlStateManager.translatef((float) x + 0.5F, (float) y + 1.75F, (float) z + 0.5F);
+            GL11.glTranslatef((float) x + 0.5F, (float) y + 1.75F, (float) z + 0.5F);
         }
 
         switch (hudOrientation) {
             case HUD_SOUTH:
-                GlStateManager.rotatef(-getHudAngle(orientation), 0.0F, 1.0F, 0.0F);
+                GL11.glRotatef(-getHudAngle(orientation), 0.0F, 1.0F, 0.0F);
                 break;
             case HUD_TOPLAYER_HORIZ:
-                GlStateManager.rotatef(-MinecraftClient.getInstance().getEntityRenderManager().cameraYaw, 0.0F, 1.0F, 0.0F);
-                GlStateManager.rotatef(180, 0.0F, 1.0F, 0.0F);
+                GL11.glRotatef(-MinecraftClient.getInstance().getEntityRenderDispatcher().camera.getYaw(), 0.0F, 1.0F, 0.0F);
+                GL11.glRotatef(180, 0.0F, 1.0F, 0.0F);
                 break;
             case HUD_TOPLAYER:
-                GlStateManager.rotatef(-MinecraftClient.getInstance().getEntityRenderManager().cameraYaw, 0.0F, 1.0F, 0.0F);
-                GlStateManager.rotatef(MinecraftClient.getInstance().getEntityRenderManager().cameraPitch, 1.0F, 0.0F, 0.0F);
-                GlStateManager.rotatef(180, 0.0F, 1.0F, 0.0F);
+                GL11.glRotatef(-MinecraftClient.getInstance().getEntityRenderDispatcher().camera.getYaw(), 0.0F, 1.0F, 0.0F);
+                GL11.glRotatef(MinecraftClient.getInstance().getEntityRenderDispatcher().camera.getPitch(), 1.0F, 0.0F, 0.0F);
+                GL11.glRotatef(180, 0.0F, 1.0F, 0.0F);
                 break;
         }
 
         if (hudPlacement == HudPlacement.HUD_FRONT || hudPlacement == HudPlacement.HUD_ABOVE_FRONT) {
-            GlStateManager.translatef(0.0F, -0.2500F, (float) (-0.4375F + .9));
+            GL11.glTranslatef(0.0F, -0.2500F, (float) (-0.4375F + .9));
         } else if (hudPlacement != HudPlacement.HUD_CENTER) {
-            GlStateManager.translatef(0.0F, -0.2500F, (float) (-0.4375F + .4));
+            GL11.glTranslatef(0.0F, -0.2500F, (float) (-0.4375F + .4));
         }
 
-        GlStateManager.disableBlend();
-        GlStateManager.disableLighting();
+        RenderSystem.disableBlend();
+        DiffuseLighting.disableGuiDepthLighting();
 
         renderText(MinecraftClient.getInstance().textRenderer, messages, 11, scale);
 
-        GlStateManager.enableLighting();
-        GlStateManager.enableBlend();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        DiffuseLighting.enableGuiDepthLighting();
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
-        GlStateManager.popMatrix();
+        GL11.glPopMatrix();
     }
 
     private static float getHudAngle(Direction orientation) {
@@ -79,11 +83,11 @@ public class HudRenderHelper {
     }
 
     private static void renderText(TextRenderer fontrenderer, List<String> messages, int lines, float scale) {
-        GlStateManager.translatef(-0.5F, 0.5F, 0.07F);
+        GL11.glTranslatef(-0.5F, 0.5F, 0.07F);
         float f3 = 0.0075F;
-        GlStateManager.scalef(f3 * scale, -f3 * scale, f3);
-        GlStateManager.normal3f(0.0F, 0.0F, 1.0F);
-        GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+        GL11.glScalef(f3 * scale, -f3 * scale, f3);
+        GL11.glNormal3f(0.0F, 0.0F, 1.0F);
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
 
         renderLog(fontrenderer, messages, lines);
     }
@@ -96,7 +100,7 @@ public class HudRenderHelper {
         for (String s : messages) {
             if (i >= logsize - lines) {
                 if (currently + height <= 124) {
-                    fontrenderer.draw(s, 7, currently, 0xffffff);
+                    fontrenderer.draw(RenderSystem.getModelViewStack(), s, 7, currently, 0xffffff);
                     currently += height;
                 }
             }

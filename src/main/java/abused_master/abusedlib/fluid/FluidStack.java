@@ -1,7 +1,7 @@
 package abused_master.abusedlib.fluid;
 
 import net.minecraft.fluid.Fluid;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
@@ -15,14 +15,18 @@ public class FluidStack {
         this.amount = amount;
     }
 
-    public CompoundTag toTag(CompoundTag tag) {
+    public void writeNbt(NbtCompound nbt) {
+        toTag(nbt);
+    }
+
+    public NbtCompound toTag(NbtCompound tag) {
         tag.putString("fluid", Registry.FLUID.getId(fluid).toString());
         tag.putInt("amount", this.amount);
         return tag;
     }
 
-    public static FluidStack fluidFromTag(CompoundTag tag) {
-        if(tag == null || !tag.containsKey("fluid")) {
+    public static FluidStack fluidFromTag(NbtCompound tag) {
+        if(tag == null || !tag.contains("fluid")) {
             return null;
         }
 

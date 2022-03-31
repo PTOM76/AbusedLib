@@ -1,8 +1,9 @@
 package abused_master.abusedlib.utils;
 
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.container.Container;
-import net.minecraft.container.Slot;
+//import net.minecraft.container.Container;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -21,18 +22,18 @@ public class InventoryHelper {
             return false;
         }
 
-        for (int i = 0; i < inventory.getInvSize(); i++) {
-            if(!inventory.getInvStack(i).isEmpty()) {
-                if(canItemStacksStack(inventory.getInvStack(i), stack) && inventory.getInvStack(i).getCount() < 64) {
+        for (int i = 0; i < inventory.size(); i++) {
+            if(!inventory.getStack(i).isEmpty()) {
+                if(canItemStacksStack(inventory.getStack(i), stack) && inventory.getStack(i).getCount() < 64) {
                     if(!simulate)
-                        stack.increment(inventory.getInvStack(i).getCount());
-                        inventory.setInvStack(i, stack);
+                        stack.increment(inventory.getStack(i).getCount());
+                        inventory.setStack(i, stack);
 
                     return true;
                 }
             }else {
                 if(!simulate)
-                    inventory.setInvStack(i, stack);
+                    inventory.setStack(i, stack);
 
                 return true;
             }
@@ -42,10 +43,10 @@ public class InventoryHelper {
     }
 
     public static boolean canItemStacksStack(ItemStack a, ItemStack b) {
-        if (a.isEmpty() || !a.isItemEqual(b) || a.hasTag() != b.hasTag())
+        if (a.isEmpty() || !a.isItemEqual(b) || a.hasNbt() != b.hasNbt())
             return false;
 
-        return (!a.hasTag() || a.getTag().equals(b.getTag()));
+        return (!a.hasNbt() || a.getNbt().equals(b.hasNbt()));
     }
 
     public static Inventory getNearbyInventory(World world, BlockPos pos) {
@@ -75,28 +76,28 @@ public class InventoryHelper {
     }
 
     //Credits to Diesieben07 for this method
-    public static ItemStack handleShiftClick(Container container, PlayerEntity player, int slotIndex) {
+    public static ItemStack handleShiftClick(ScreenHandler screenHandler, PlayerEntity player, int slotIndex) {
         @SuppressWarnings("unchecked")
-        List<Slot> slots = container.slotList;
+        List<Slot> slots = screenHandler.slots;
         Slot sourceSlot = slots.get(slotIndex);
         ItemStack inputStack = sourceSlot.getStack();
         if (inputStack == ItemStack.EMPTY) {
             return ItemStack.EMPTY;
         }
 
-        boolean sourceIsPlayer = sourceSlot.inventory == player.inventory;
+        boolean sourceIsPlayer = sourceSlot.inventory == player.getInventory();
 
         ItemStack copy = inputStack.copy();
 
         if (sourceIsPlayer) {
-            if (!mergeStack(player.inventory, false, sourceSlot, slots, false)) {
+            if (!mergeStack(player.getInventory(), false, sourceSlot, slots, false)) {
                 return ItemStack.EMPTY;
             } else {
                 return copy;
             }
         } else {
             boolean isMachineOutput = !sourceSlot.canTakeItems(player);
-            if (!mergeStack(player.inventory, true, sourceSlot, slots, !isMachineOutput)) {
+            if (!mergeStack(player.getInventory(), true, sourceSlot, slots, !isMachineOutput)) {
                 return ItemStack.EMPTY;
             } else {
                 return copy;
@@ -120,7 +121,7 @@ public class InventoryHelper {
                 if ((targetSlot.inventory == playerInv) == mergeIntoPlayer) {
                     ItemStack target = targetSlot.getStack();
                     if (ItemStack.areItemsEqual(sourceStack, target)) {
-                        int targetMax = Math.min(targetSlot.getMaxStackAmount(), target.getMaxCount());
+                        int targetMax = Math.min(targetSlot.getMaxItemCount(), target.getMaxCount());
                         int toTransfer = Math.min(sourceStack.getCount(), targetMax - target.getCount());
                         if (toTransfer > 0) {
                             target.increment(toTransfer);
