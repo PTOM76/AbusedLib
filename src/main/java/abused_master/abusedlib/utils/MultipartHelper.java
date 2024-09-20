@@ -11,11 +11,11 @@ import net.minecraft.util.registry.Registry;
 
 public class MultipartHelper {
 
-    public static void serialize(IMultipart multipart, NbtCompound tag) {
+    public static NbtCompound serialize(IMultipart multipart, NbtCompound tag) {
 
         ((MixinBlockEntity)multipart.getMultipartEntity()).invoteWriteNbt(tag);
         tag.putString("multipartIdentifier", Registry.BLOCK_ENTITY_TYPE.getId(multipart.getMultipartEntity().getType()).toString());
-
+        return tag;
     }
 
     public static IMultipart deserialize(NbtCompound tag, BlockPos pos, BlockState state) {
